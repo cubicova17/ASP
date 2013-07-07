@@ -1,3 +1,7 @@
+import os
+import tempfile
+os.environ['MPLCONFIGDIR'] = tempfile.mkdtemp()
+import matplotlib
 import matplotlib.finance as finance
 import matplotlib.mlab as mlab
 import time

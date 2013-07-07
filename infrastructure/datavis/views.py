@@ -6,19 +6,23 @@ from datavis.predictors import Predictors
 from datavis.transforms import Transforms
 from datavis.filters import Filters
 from django.http import HttpResponse
-from django.views.generic.simple import direct_to_template
+#from django.views.generic.simple import direct_to_template
+from django.views.generic import TemplateView
 import numpy
 import datetime
 import time
-
+from django.shortcuts import render_to_response, get_object_or_404, redirect, render
 
 """
 In Django, requests for URLs are mapped to functions in here.
 A request for / will be mapped to index(request) and so on.
 """
 
-
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt
 def index(request):
+	#csrf_token = get_token(request)
 	"""
 	Executed when a request for / comes in. The default symbol is 'EBAY'.
 	The default time range is 2000 to now.
@@ -38,7 +42,7 @@ def index(request):
 		symbol = symbol.upper()
 
 	if symbol == "":
-		symbol = 'EBAY'
+		symbol = 'GOOG'
 
 	start = datetime.date(1999, 12, 31)
 	end = datetime.datetime.now()
@@ -54,7 +58,7 @@ def index(request):
 
 	# find the MA and MACD of this time series
 	indicators = Indicators(prices)	
-	ma20 = indicators.moving_average(20, type='simple')
+	ma20 = indicators.moving_average(7, type='simple')
 	macd = indicators.moving_average_convergence()
 	rsi = indicators.relative_strength()
 
@@ -67,9 +71,10 @@ def index(request):
 		'ma20': ma20,
 		'macd': macd,
 		'rsi': rsi,
+		#'csrf_token': csrf_token
 	}
-
-	return direct_to_template(request, template, context)
+	from django.template.context import RequestContext
+	return render_to_response(template, context,context_instance=RequestContext(request))
 
 
 def predict(request, symbol):
@@ -88,7 +93,7 @@ def predict(request, symbol):
 	projection: data needed for "projection" div in index.html to show a next-day stock price via ajax
 	"""
 	# find the next day stock price in this time series
-	start = datetime.date(1999, 12, 31)
+	start = datetime.date(2009, 12, 31)
 	end = datetime.datetime.now()
 
 	# get the stock history for that symbol with start and end dates
@@ -140,7 +145,8 @@ def fft(request, symbol):
 		'power': power,
 	}
 
-	return direct_to_template(request, template, context)
+	return render_to_response(template, context,context_instance=RequestContext(request))
+	#return direct_to_template(request, template, context)
 
 
 def kalman(request, symbol):
@@ -184,5 +190,5 @@ def kalman(request, symbol):
 		'mu': mu,
 		'sigma': sigma,
 	}
-
-	return direct_to_template(request, template, context)
+	return render_to_response(template, context,context_instance=RequestContext(request))
+	#return direct_to_template(request, template, context)
