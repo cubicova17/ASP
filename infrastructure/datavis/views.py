@@ -11,6 +11,7 @@ from django.views.generic import TemplateView
 import numpy
 import datetime
 import time
+import logging
 from django.shortcuts import render_to_response, get_object_or_404, redirect, render
 
 """
@@ -40,24 +41,27 @@ def index(request):
 	if request.method == "POST":
 		symbol = request.POST.get("symbol")
 		symbol = symbol.upper()
-
+		logging.error("changing symbol"+symbol)
 	if symbol == "":
 		symbol = 'GOOG'
 
-	start = datetime.date(1999, 12, 31)
+	start = datetime.date(2012, 12, 31)
 	end = datetime.datetime.now()
 
 	# get the stock history for that symbol with start and end dates
 	stock = Stocks(symbol, start, end)
 	try:
-		dates, prices = stock.get_stock_history()
+
+		dates, prices_close, prices_open, prices_high, prices_low = stock.get_stock_history()
+		
 	except Exception as e:
+		logging.error("error retrieving symbol "+ symbol)
 		symbol = 'EBAY'
 		stock = Stocks(symbol, start, end)
-		dates, prices = stock.get_stock_history()
+		dates, prices_close, prices_open, prices_high, prices_low = stock.get_stock_history()
 
 	# find the MA and MACD of this time series
-	indicators = Indicators(prices)	
+	indicators = Indicators(prices_close)	
 	ma20 = indicators.moving_average(7, type='simple')
 	macd = indicators.moving_average_convergence()
 	rsi = indicators.relative_strength()
@@ -67,7 +71,10 @@ def index(request):
 	context = {
 		'symbol': symbol,
 		'dates': dates,
-		'prices': prices,
+		'prices': prices_close,
+		'prices_open': prices_open,
+		'prices_high': prices_high,
+		'prices_low': prices_low,		
 		'ma20': ma20,
 		'macd': macd,
 		'rsi': rsi,
@@ -77,7 +84,7 @@ def index(request):
 	return render_to_response(template, context,context_instance=RequestContext(request))
 
 
-def predict(request, symbol):
+def predict(request, symbol, method =None):
 	"""
 	Executed when a request for /predict/SYMBOL comes in.
 	Django handles parsing this string for SYMBOL.
@@ -98,12 +105,15 @@ def predict(request, symbol):
 
 	# get the stock history for that symbol with start and end dates
 	stock = Stocks(symbol, start, end)
-	dates, prices = stock.get_stock_history()
+	dates, prices,  close_, low_, high_ = stock.get_stock_history()
 
+	if method == 'NN':
+		logging.error("Started predicting")
+		predictor = Predictors(dates, prices)
+		projection = predictor.predict()
+		projection = "%.2f" % projection		
+		logging.error("Ended predicting")
 	# use our neural network to predict the next day closing price
-	predictor = Predictors(dates, prices)
-	projection = predictor.predict()
-	projection = "%.2f" % projection
 
 	return HttpResponse(projection, mimetype="text/html")
 

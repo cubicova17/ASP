@@ -7,7 +7,9 @@ admin.autodiscover()
 
 urlpatterns = patterns('datavis.views',
     url(r'^$', 'index', name='index'),
-	url(r'^predict/(?P<symbol>.*)$', 'predict', name='predict'),
+
+	url(r'^predict/(?P<method>.*)/(?P<symbol>.*)$', 'predict', name='predict'),
+
 	url(r'^fft/(?P<symbol>.*)$', 'fft', name='fft'),
 	url(r'^kalman/(?P<symbol>.*)$', 'kalman', name='kalman'),
 )

@@ -5,7 +5,7 @@ import matplotlib
 import matplotlib.finance as finance
 import matplotlib.mlab as mlab
 import time
-
+import logging
 
 class Stocks:
 	"""
@@ -45,11 +45,13 @@ class Stocks:
 		stock_history = finance.fetch_historical_yahoo(self.symbol, self.start, self.end)
 		r = mlab.csv2rec(stock_history)
 		r.sort()
-
+		#logging.error(r)
 		dates = r.date
 		prices = r.adj_close
-
+		prices_open = r.open
+		prices_high = r.high
+		prices_low = r.low
 		# convert to epoch time for highcharts
 		dates = [(int(time.mktime(time.strptime(date.strftime("%Y-%m-%d"), "%Y-%m-%d"))) - time.timezone)*1000 for date in dates]
 
-		return dates, prices
+		return dates, prices, prices_open, prices_high, prices_low
