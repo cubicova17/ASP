@@ -51,7 +51,7 @@ class Stocks:
 		prices_open = r.open
 		prices_high = r.high
 		prices_low = r.low
-		# convert to epoch time for highcharts
+		volume = r.volume
+        # convert to epoch time for highcharts
 		dates = [(int(time.mktime(time.strptime(date.strftime("%Y-%m-%d"), "%Y-%m-%d"))) - time.timezone)*1000 for date in dates]
-
-		return dates, prices, prices_open, prices_high, prices_low
+		return dates, prices, prices_open, prices_high, prices_low, volume

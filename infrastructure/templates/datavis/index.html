@@ -27,7 +27,7 @@
 				symbol = '{{ symbol }}';
 				{% endif %}
 				
-				names = ['RSI', symbol, 'Рухоме середнє', 'Рухоме середнє[CD]'];
+				names = ['Volume', symbol, 'Рухоме середнє', 'Рухоме середнє[CD]'];
 				
 				var xValue = [];
 				var yValue_close = [];
@@ -37,11 +37,15 @@
 				var mValue = [];
 				var dValue = [];
 				var rValue = [];
+                var volumeValue = [];
+                var patterns = [];
 
 				{% for date in dates %}
 				xValue.push({{ date }});
 				{% endfor %}
+				
 
+				
 				{% for price in prices_open %}
 				yValue_open.push(parseFloat({{ price }}));
 				{% endfor %}
@@ -70,7 +74,11 @@
 				{% for rs in rsi %}
 				rValue.push(parseFloat({{ rs }}));
 				{% endfor %}
-				
+
+                {% for v in volume %}
+                    volumeValue.push(parseFloat({{ v }}));
+                {% endfor %}
+
 				var data = [];
 				for (var i = 0; i < xValue.length; i++) { 
 					data.push([xValue[i],yValue_open[i],yValue_high[i],yValue_low[i],yValue_close[i]]);
@@ -91,23 +99,31 @@
 				for (var i = 0; i < xValue.length; i++) { 
 					rsi.push([xValue[i],rValue[i]]);
 				}
-
+                var volume = [];
+                for (var i = 0; i < xValue.length; i++) {
+                    volume.push([xValue[i],volumeValue[i]]);
+                }
+				
 				seriesOptions[0] = {
 					name: names[0],
-					data: rsi
+					data: volume,
+
 				};
 				
 				seriesOptions[1] = {
 					name: names[1],
 					type: 'candlestick',
 					data: data,
-					yAxis: 1
+					yAxis: 1,
+                    id: 'candles'
+
 				};
 				
 				seriesOptions[2] = {
 					name: names[2],
 					data: mav,
-					yAxis: 1
+					yAxis: 1,
+
 				};
 				
 				seriesOptions[3] = {
@@ -115,7 +131,46 @@
 					data: macd,
 					yAxis: 2
 				};
-								
+				{% if output|length %}
+				var output = [];
+				{% for x in output %}
+				output.push({{ x }});
+                    {% if x < 0 or x > 0 %}
+                    patterns.push({{ forloop.counter }}-1);
+                    {% endif %}
+				{% endfor %}
+				//console.log(xValue[patterns[0]]);
+				var output_2d = [];
+				for (var i = 0; i < output.length; i++) { 
+					output_2d.push([xValue[i],output[i]]);
+				}
+                //console.log(patterns.length)
+                if(patterns.length > 0)
+                seriesOptions[4] = {
+                    type : 'flags',
+                    name: 'Patterns',
+                    yAxis: 1,
+                    data : [{
+                        x : xValue[patterns[0]],
+
+                        title : '{{ current_func }}',
+                        text : '{{ current_func }}'
+                    }],
+
+                    onSeries : 'candles',
+                    shape : 'circlepin',
+
+                    width : 16
+                };
+                    //				seriesOptions[5] = {
+//					name: "TA",
+//					data: output_2d,
+//					yAxis: 2
+//
+//				};
+
+                        {% endif %}
+							
 				createChart();
 				
 			// create the chart when all data is loaded
@@ -142,7 +197,7 @@
 			            enabled: false
 			        },
 				    rangeSelector: {
-				        selected: 2
+				        selected: 3
 				    },
 				    yAxis: [{
 					    height: 85,
@@ -201,9 +256,17 @@
 				
 				    series: seriesOptions
 				});
-			}
+                chart.renderer.image('http://www.quanttools.com/HTMLHelp/html/images/{{ current_func}}.jpg', 20, 80, 80, 80)
+                        .attr({
+                            zIndex: 100
+                        })
+                        .add();
+            }
 
 			$(document).ready(function() {
+                {% if found %}
+                alert('Рекомендована стратегія: {{ current_func }} ');
+                {% endif %}
 				// jquerytools tooltip config
 				$("#tltip[title]").tooltip({
 						// use the fade effect instead of the default
@@ -265,13 +328,14 @@
 			    //	}
 			    //});	
 			});
+
 		});
 		</script>	
 	</head>
 	<body>
-		<div style="display:table;">
+		<div style="display:block;">
 		<div id="container" style="height: 600px; min-width: 1000px;float:right;display:table-cell;"></div>
-		<form action="" id="stock" method="post" autocomplete="off" style="display:table-cell;float:left;margin-top: 50px;">
+		<form action="" id="stock" method="post" autocomplete="off" style="display:table;float:left;width:220px;">
 		<table style="float:left" cellspacing="2">
 			<tr>
 				<th></th>
@@ -284,16 +348,30 @@
 					<option value="BAC">Bank of America</option>
 					<option value="INTC">Intel</option>
 					<option value="GE">General Electric</option>
+					<option value="SMTP">SMTP</option>
+					<option value="EBAY">EBAY</option>
+					<option value="AMZN">Amazon</option>
+					<option value="V">Visa</option>
+					<option value="ZNG">Zynga</option>
+					<option value="F">Ford</option>
+					<option value="FB">Facebook</option>
+					<option value="TILT">TILT</option>
+					<option value="M">Macy</option>
+					<option value="T">A & T</option>
+					<option value="ZLCS">ZLCS</option>
+					<option value="L">L</option>
+					<option value="LOW">LOW</option>
+					<option value="LULU">LULU</option>
 					</select>
 				<th><button type="submit" class="button" value="Symbol">Оновити</button></th>
 			</tr>
 		</table>		
-		</form>
+
 		<table style="display:table-cell;float:left;margin-top: 50px;" cellspacing="2">
 			<tr>
 				<th></th>
 				<th style="height:10px; width:100px">
-					<div id="tltip" title=" 2000.">Модуль прогнозу</div>
+					<div id="ltip" title=" 2000.">Модуль прогнозу</div>
 					<!--input type="text" name="symbol" style="width:50px;text-transform: uppercase"/></th-->
 					<select name="algo" size="2" style="width: 170px;">
 					<option value="NN">Нейронні мережі</option>
@@ -307,21 +385,46 @@
 
 			</tr>
 		</table>
+
+            <table style="display:table-cell;float:left;margin-top: 50px;" cellspacing="2">
+			<tr>
+				<th></th>
+				<th style="height:10px; width:100px">
+					<div id="agent" title=" 2000.">Модуль Агента</div>
+					<!--input type="text" name="symbol" style="width:50px;text-transform: uppercase"/></th-->
+					<select name="predict_agent" size="2" style="width: 170px;">
+					<option value="NN">Навчання на тестовій вибірці</option>
+					<option value="KALMAN">Перевірка гіпотез на основній</option>
+					<option value="KALMAN">Запуск на реальних данних</option>
+					<option value="predict">Рекомендація стратегії</option>
+					</select>
+				<th><button type="submit" class="button" value="Symbol">Запуск</button></th>
+			</tr>
+		    </table>
+
+		<!--form action="" id="talib" method="post" autocomplete="off" -->
 		<table style="display:table-cell;float:left;margin-top: 50px;" cellspacing="2">
 			<tr>
 				<th></th>
 				<th style="height:10px; width:100px">
-					<div id="tltip" title=" 2000.">Модуль Агента</div>
+					<div id="tltp" title=" 2000.">Розпізнавання паттернів</div>
 					<!--input type="text" name="symbol" style="width:50px;text-transform: uppercase"/></th-->
-					<select name="agent" size="2" style="width: 170px;">
-					<option value="NN">Навчання на тестовій вибірці</option>
-					<option value="KALMAN">Перевірка гіпотез на основній</option>
-					<option value="KALMAN">Запуск на реальних данних</option>
+					<select name="ta_func" size="2" style="width: 170px;height: 200px;overflow-y:scroll;">
+					{% for p in patterns %}
+					<option value="{{ p }}">{{ p }}</option>						
+					{% endfor %}
+
 					</select>
 				<th><button type="submit" class="button" value="Symbol">Запуск</button></th>
 			</tr>
 		</table>
-		<table style="display:table-cell;float:left;margin-top: 50px;" cellspacing="2">
+		</form>
+        {% if current_func %}
+        <!--<img src ="" />-->
+        {% endif %}
+        <div style="clear: both;"></div> <!-- Clear the float -->
+		
+		<table style="display:table-cell;float:left;" cellspacing="2">
 			<tr>
 				<th></th>
 				<th style="height:10px; width:200px">
@@ -329,7 +432,7 @@
 					<!--input type="text" name="symbol" style="width:50px;text-transform: uppercase"/></th-->
 					<label style="float:left;"><input type="checkbox" checked name="RSI" value="Bike">Індекс відносної сили</label> <br/>
 					<label style="float:left;"><input type="checkbox" checked  name="MA" value="Car">Рухоме середнє</label> <br/>
-					<label style="float:left;"><input type="checkbox" checked  name="MACD" value="Car">Рухоме середнє(девіація)</label> <br/>
+					<label style="float:left;"><input type="checkbox" checked  name="MACD" value="Car">Рухоме середнє(девіація)</label> <br/>					
 					<button id="kalman" class="button" value="KALMAN">Фільтр Калмана</button>
 				<!--th><button type="submit" class="button" value="Symbol">Запуск</button></th-->
 			</tr>
@@ -341,17 +444,28 @@
 				<th style="height:10px; width:50px"></th>
 			</tr>
 		</table>
-		<table style="float: left; margin: 0 10px 10px 180px;" cellspacing="2">
+		<!--table style="float: left; margin: 0 10px 10px 180px;" cellspacing="2">
 			<tr>
 				<th><div id="tltip" title="Трансформація Фурє переводить ряд в частотну область и дає змогу спостерігати періодичні тренди.">Трансформація Фурє:</div></th>
 				<th style="height:10px; width:50px"><button id="fft" class="button" value="FFT">Обчислити</button></th>
 			</tr>
-		</table>
+		</table-->
 		<!--table style="float:right" cellspacing="2">
 			<tr>
 				<th><div id="tltip" title="Нейронні мережі (прогнозування на наступні дні на основі історичних данних)">Наступний день:</div></th>
 				
 			</tr>
 		</table-->
+        <table style="float: left;" cellspacing="2">
+            <tr>
+                <td>
+                    {% autoescape off %}
+                    {{ text_tip }}
+                    {% endautoescape %}
+
+                </td>
+
+            </tr>
+        </table>
 	</body>
 </html>
